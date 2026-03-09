@@ -1,28 +1,36 @@
 # Codex Feishu Bot
 
-把“一键创建飞书机器人”这件事尽量交给用户自己的 Codex 自动完成。
+把 `codex app-server` 接到飞书群聊，并把“创建飞书应用、开事件订阅、补权限、发布版本、Docker 部署”这整套流程尽量交给用户自己的 Codex 自动完成。
 
 这个仓库的主路径不是“用户自己看文档手点控制台”，而是：
 
 1. 用户打开 Codex，模型切到 `GPT-5.4`，推理强度设成 `xhigh`
 2. 用户把仓库地址贴给 Codex
-3. Codex 按本仓库的 `README.md`、`AGENTS.md` 和 `docs/` 自己执行一键创建飞书机器人的脚本
-4. 用户只在必须的时候介入：扫码登录 Feishu / OpenAI，或处理租户管理员审批
+3. Codex 按本仓库的 `README.md`、`AGENTS.md` 和 `docs/` 自己完成环境准备、浏览器自动化和部署
+4. 用户只在必须的时候介入：登录 Feishu / OpenAI，或处理租户管理员审批
 
 ## 这套仓库能自动做什么
 
-- 直接执行 `npx -y lark-op-cli@latest create-bot`
-- 持续读取脚本输出，而不是等命令结束后再总结
-- 如果出现扫码登录，把 ASCII 二维码原样转发给用户
-- 在命令结束后汇总创建结果和下一步信息
+- 用 Chrome DevTools Protocol 启动一个专用浏览器实例
+- 让 Codex 通过浏览器自动化操作飞书开放平台
+- 创建一个新的企业自建应用
+- 打开机器人能力
+- 切到飞书长连接模式
+- 订阅 `im.message.receive_v1`
+- 补齐 IM 相关权限
+- 发布版本
+- 把 `FEISHU_APP_ID` / `FEISHU_APP_SECRET` 写回 `.env.real`
+- 用 Docker 起单个 `app` 服务
+- 跑健康检查和 smoke check
 
-默认情况下，运行时 `Codex` 看到的工作目录是当前仓库目录。这个创建路径不要求打开浏览器，也不要求用 `agent-browser` 或 Chrome CDP。
+默认情况下，运行时 `Codex` 看到的工作目录是单独挂载的 `/workspace`，不是这个仓库本身。给用户的导出文件会写到这个运行时工作目录下的 `artifacts/`，宿主机默认对应 `.codex-local/workspace/artifacts/`。
+聊天运行态快照也会写到工作目录下的 `.codex-feishu-bot/runtime-state.json`，因此容器重启后仍能保留 `chat -> thread` 映射和最近消息投影；但重启前未完成的 run 会被标记为已中断，不会继续占着 active turn。服务重启完成后，机器人会自动在受影响的群里发一条提示，告诉用户可以直接回复“继续”。
 
 ## 用户还需要做什么
 
 只有这几类动作仍然属于用户：
 
-- 扫码登录飞书
+- 登录飞书开放平台
 - 登录 OpenAI / Codex
 - 处理 SSO、2FA 或租户管理员审批
 
@@ -35,7 +43,10 @@
 建议环境：
 
 - macOS 或 Linux
+- Docker / OrbStack
 - Node.js 22+
+- `pnpm`
+- Google Chrome
 - Codex Desktop 或可用的 Codex 会话
 
 ### 2. 让 Codex 接管
@@ -48,7 +59,7 @@
 
 同样的 prompt 也单独放在 [docs/codex-bootstrap-prompt.md](docs/codex-bootstrap-prompt.md)。
 
-### 3. Codex 会执行的本地命令
+### 3. 当前这条 Prompt 会执行的本地命令
 
 ```bash
 npx -y lark-op-cli@latest create-bot
@@ -58,11 +69,12 @@ npx -y lark-op-cli@latest create-bot
 
 - [AGENTS.md](AGENTS.md)：给 Codex 的仓库级操作约束
 - [docs/codex-bootstrap-playbook.md](docs/codex-bootstrap-playbook.md)：Codex 的执行剧本
+- [docs/feishu-console-automation.md](docs/feishu-console-automation.md)：飞书开放平台需要达到的目标状态
 - [docs/open-source-scope.md](docs/open-source-scope.md)：v1 自动化边界
 
 ## 一键创建路径
 
-这个仓库当前的 prompt 路径只要求执行一键创建飞书机器人的脚本，不要求打开浏览器。
+这个仓库当前这条 prompt 路径只要求执行一键创建飞书机器人的脚本，不要求打开浏览器。
 
 推荐命令：
 
@@ -78,8 +90,6 @@ npx -y lark-op-cli@latest create-bot
 - 不调用 `agent-browser`
 
 ## Docker 运行架构
-
-以下章节保留给仓库的其他开发/部署用途，不属于当前“一键创建飞书机器人” prompt 路径。
 
 ```mermaid
 flowchart LR
@@ -191,10 +201,10 @@ curl http://localhost:3400/fake/state
 
 ## 注意事项
 
-- `.env.real`、`.codex-local/` 都不要提交到 GitHub
+- `.env.real`、本地 Chrome profile、`.codex-local/` 都不要提交到 GitHub
 - 用户可见导出文件默认会落到 `.codex-local/workspace/artifacts/`，这是预期行为，不是源码目录
 - 运行时用户可见的文件必须通过飞书 API 发布，工作空间文件默认只有 Codex 自己可见
-- 这套 prompt 默认不会打开浏览器，也不会调用 `agent-browser`
+- 这套仓库默认不会为用户申请不存在的“飞书开发者平台管理 API”；平台配置路径是浏览器自动化
 - 对外只有单容器部署，不再提供双容器 sidecar 运行模式
 
 ## License
