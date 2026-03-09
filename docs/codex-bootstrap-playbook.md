@@ -34,7 +34,7 @@ agent-browser install
 2. Open the Feishu Open Platform app list.
 3. If the user is not logged in, stop and ask them to finish login in that browser window.
 4. Check whether there is already a Feishu app/bot that is clearly the intended target for this setup.
-5. Reuse the existing app if it is clearly the right one; otherwise run `npx -y lark-op-cli@latest create-bot` to create a new bot.
+5. Reuse the existing app if it is clearly the right one; otherwise run `npx -y lark-op-cli@latest create-bot --name "Codex 机器人"` to create a new bot.
 6. If `create-bot` is running, read the command output continuously instead of waiting for process exit.
 7. If the command shows an ASCII QR code or other login prompt, surface it to the user immediately so they can scan or confirm.
 8. After the target bot/app is confirmed, continue without asking the user to click through normal console steps.
