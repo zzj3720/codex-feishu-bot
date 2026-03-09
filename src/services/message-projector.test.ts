@@ -89,3 +89,53 @@ test("MessageProjector keeps commentary and final answer as separate assistant i
     ]
   );
 });
+
+test("MessageProjector overwrites the current final answer item when the run fails", () => {
+  const runStore = new RunStore();
+  const conversationStore = new ConversationStore();
+  const projector = new MessageProjector(runStore, conversationStore);
+  const run = runStore.create({
+    chatId: "oc_chat_1",
+    threadId: "thread_1",
+    sourceMessageId: "om_source_1"
+  });
+
+  projector.apply(run.runId, {
+    kind: "assistant_message_started",
+    itemId: "msg_final",
+    source: "final_answer"
+  });
+
+  const result = projector.apply(run.runId, {
+    kind: "error",
+    message: "执行失败"
+  });
+
+  assert.equal(result.items[0]?.itemId, "msg_final");
+  assert.equal(result.items[0]?.phase, "failed");
+  assert.equal(result.items[0]?.content, "执行失败");
+  assert.deepEqual(
+    projector.list(run.runId).map((item) => [item.itemId, item.phase, item.content]),
+    [["msg_final", "failed", "执行失败"]]
+  );
+});
+
+test("MessageProjector creates a dedicated error item when no final answer exists yet", () => {
+  const runStore = new RunStore();
+  const conversationStore = new ConversationStore();
+  const projector = new MessageProjector(runStore, conversationStore);
+  const run = runStore.create({
+    chatId: "oc_chat_1",
+    threadId: "thread_1",
+    sourceMessageId: "om_source_1"
+  });
+
+  const result = projector.apply(run.runId, {
+    kind: "error",
+    message: "执行失败"
+  });
+
+  assert.equal(result.items[0]?.itemId, `error:${run.runId}`);
+  assert.equal(result.items[0]?.phase, "failed");
+  assert.equal(result.items[0]?.content, "执行失败");
+});

@@ -157,8 +157,10 @@ export class MessageProjector {
         };
       }
       case "error": {
-        const errorItemId = `error:${runId}`;
+        const finalAnswerItem = this.findLatestFinalAnswerItem(run.runId);
+        const errorItemId = finalAnswerItem?.itemId ?? `error:${runId}`;
         const item =
+          finalAnswerItem ??
           this.conversationStore.get(runId, errorItemId) ??
           this.ensureItem(run, errorItemId, "assistant_text", "final_answer", {
             phase: "failed",
@@ -211,5 +213,17 @@ export class MessageProjector {
 
     this.conversationStore.save(item);
     return item;
+  }
+
+  private findLatestFinalAnswerItem(runId: string): ConversationItem | undefined {
+    const items = this.conversationStore.listByRun(runId);
+    for (let index = items.length - 1; index >= 0; index -= 1) {
+      const item = items[index];
+      if (item?.kind === "assistant_text" && item.source === "final_answer") {
+        return item;
+      }
+    }
+
+    return undefined;
   }
 }
