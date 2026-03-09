@@ -311,3 +311,75 @@ test("ChatOrchestrator ignores duplicated incoming message ids", async () => {
   assert.equal(runStore.list().length, 1);
   assert.equal(conversationStore.list().length, 1);
 });
+
+test("ChatOrchestrator expands the create-feishu-bot shortcut into the builtin prompt", async () => {
+  const sessionStore = new SessionStore();
+  const runStore = new RunStore();
+  const conversationStore = new ConversationStore();
+  const projector = new MessageProjector(runStore, conversationStore);
+  let receivedPrompt = "";
+  let resolveTurn: (() => void) | undefined;
+  const turnCompleted = new Promise<void>((resolve) => {
+    resolveTurn = resolve;
+  });
+
+  const codexWorker: CodexWorker = {
+    async ensureThread() {
+      return "thread_shortcut_1";
+    },
+    async *runTurn(context): AsyncGenerator<CodexEvent> {
+      receivedPrompt = context.message.text;
+      yield {
+        kind: "thread_bound",
+        threadId: "thread_shortcut_1"
+      };
+      yield {
+        kind: "turn_bound",
+        turnId: "turn_shortcut_1"
+      };
+      yield {
+        kind: "assistant_message_started",
+        itemId: "msg_shortcut_1",
+        source: "final_answer"
+      };
+      yield {
+        kind: "assistant_message_completed",
+        itemId: "msg_shortcut_1",
+        text: "开始执行"
+      };
+      resolveTurn?.();
+    }
+  };
+
+  const orchestrator = new ChatOrchestrator(
+    sessionStore,
+    runStore,
+    conversationStore,
+    {
+      schedule() {
+        return undefined;
+      },
+      async flushRun() {
+        return undefined;
+      }
+    } as never,
+    projector,
+    codexWorker,
+    "/workspace",
+    createLogger()
+  );
+
+  orchestrator.enqueue(
+    createMessage({
+      messageId: "om_shortcut_1",
+      text: "/create-feishu-bot"
+    })
+  );
+
+  await turnCompleted;
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  assert.match(receivedPrompt, /npx -y lark-op-cli@latest create-bot/);
+  assert.match(receivedPrompt, /ASCII 二维码/);
+  assert.match(receivedPrompt, /转发给我/);
+});

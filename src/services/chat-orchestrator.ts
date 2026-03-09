@@ -3,6 +3,7 @@ import type { CodexWorker } from "../integrations/codex/codex-worker.js";
 import { ConversationStore } from "../stores/conversation-store.js";
 import { RunStore } from "../stores/run-store.js";
 import { SessionStore } from "../stores/session-store.js";
+import { resolveBuiltinPromptMessage } from "./builtin-prompts.js";
 import { ConversationDeliveryService } from "./conversation-delivery-service.js";
 import { MessageProjector } from "./message-projector.js";
 
@@ -27,6 +28,9 @@ export class ChatOrchestrator {
   ) {}
 
   enqueue(message: IncomingChatMessage): void {
+    const resolved = resolveBuiltinPromptMessage(message);
+    const effectiveMessage = resolved.message;
+
     if (message.senderType === "app" || message.senderType === "bot") {
       this.logger.info(
         {
@@ -55,22 +59,23 @@ export class ChatOrchestrator {
 
     this.logger.info(
       {
-        chatId: message.chatId,
-        messageId: message.messageId,
-        chatType: message.chatType,
-        senderId: message.senderId,
-        textPreview: message.text.slice(0, 120)
+        chatId: effectiveMessage.chatId,
+        messageId: effectiveMessage.messageId,
+        chatType: effectiveMessage.chatType,
+        senderId: effectiveMessage.senderId,
+        textPreview: effectiveMessage.text.slice(0, 120),
+        shortcut: resolved.shortcut
       },
       "收到飞书消息，准备进入编排处理"
     );
 
-    const existingSession = this.sessionStore.get(message.chatId);
+    const existingSession = this.sessionStore.get(effectiveMessage.chatId);
     if (existingSession?.activeRunId && this.codexWorker.steerTurn) {
-      void this.dispatchActiveOrNew(existingSession, message);
+      void this.dispatchActiveOrNew(existingSession, effectiveMessage);
       return;
     }
 
-    void this.handleMessage(message);
+    void this.handleMessage(effectiveMessage);
   }
 
   private async handleMessage(message: IncomingChatMessage): Promise<void> {
