@@ -14,6 +14,7 @@ interface LoggerLike {
 export class ConversationDeliveryService {
   private readonly timers = new Map<string, NodeJS.Timeout>();
   private readonly inFlight = new Map<string, Promise<void>>();
+  private static readonly ASSISTANT_STREAM_DEBOUNCE_MS = 200;
 
   constructor(
     private readonly feishuClient: FeishuMessageClient,
@@ -40,7 +41,7 @@ export class ConversationDeliveryService {
           "同步飞书消息槽位失败"
         );
       });
-    }, this.debounceMs);
+    }, this.resolveDebounceMs(item));
 
     this.timers.set(key, timer);
   }
@@ -100,8 +101,7 @@ export class ConversationDeliveryService {
   }
 
   private async deliverTextItem(item: ConversationItem): Promise<void> {
-    const content = item.content?.trim();
-    if (!content) {
+    if (!item.feishuMessageId && item.source !== "final_answer" && !item.content?.trim()) {
       return;
     }
 
@@ -130,6 +130,14 @@ export class ConversationDeliveryService {
     this.conversationStore.update(item.runId, item.itemId, {
       deliveredContentHash: nextHash
     });
+  }
+
+  private resolveDebounceMs(item: ConversationItem): number {
+    if (item.kind === "assistant_text" && item.phase !== "completed" && item.phase !== "failed") {
+      return Math.min(this.debounceMs, ConversationDeliveryService.ASSISTANT_STREAM_DEBOUNCE_MS);
+    }
+
+    return this.debounceMs;
   }
 
   private async deliverToolItem(item: ConversationItem): Promise<void> {
