@@ -28,7 +28,7 @@ When the console provides both Chinese and English labels, either is acceptable 
 ## Recommended Console Flow
 
 1. Open the app list in Feishu Open Platform.
-2. Reuse an existing app if it is obviously the intended bot app; otherwise create a new enterprise self-built app.
+2. Create a new enterprise self-built app for this setup flow. Do not reuse an older app by default.
 3. Enable bot capability.
 4. Open the event subscription page.
 5. Select long connection / persistent connection mode.
@@ -45,6 +45,4 @@ Only pause for the user when one of these happens:
 - Feishu login is required.
 - SSO / 2FA is required.
 - Tenant admin approval is required.
-- The console presents multiple plausible existing apps and the target is genuinely ambiguous.
-
 Otherwise continue autonomously.

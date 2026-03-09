@@ -33,12 +33,15 @@ agent-browser install
 1. Connect to the Chrome CDP endpoint started by `pnpm chrome:debug`.
 2. Open the Feishu Open Platform app list.
 3. If the user is not logged in, stop and ask them to finish login in that browser window.
-4. After login, continue without asking the user to click through normal console steps.
-5. Follow the target state in `docs/feishu-console-automation.md`.
-6. Persist the resulting `FEISHU_APP_ID` and `FEISHU_APP_SECRET` into `.env.real`.
-7. If the user's machine already has `~/.codex/auth.json`, set `CODEX_HOME_SOURCE` in `.env.real` to that absolute host path. Only use `OPENAI_API_KEY` when local Codex auth is missing.
-8. Keep `CODEX_ARTIFACTS_DIR` pointed at the default artifact directory unless the user explicitly wants another export location.
-9. Keep `CODEX_WORKSPACE_HOST_PATH` pointed at the dedicated runtime workspace. Do not mount the repository checkout itself to `/workspace`.
+4. After login, directly create a new Feishu bot by running `npx -y lark-op-cli@latest create-bot`.
+5. Read the command output continuously instead of waiting for process exit.
+6. If the command shows an ASCII QR code or other login prompt, surface it to the user immediately so they can scan or confirm.
+7. After the new bot/app exists, continue without asking the user to click through normal console steps.
+8. Follow the target state in `docs/feishu-console-automation.md`.
+9. Persist the resulting `FEISHU_APP_ID` and `FEISHU_APP_SECRET` into `.env.real`.
+10. If the user's machine already has `~/.codex/auth.json`, set `CODEX_HOME_SOURCE` in `.env.real` to that absolute host path. Only use `OPENAI_API_KEY` when local Codex auth is missing.
+11. Keep `CODEX_ARTIFACTS_DIR` pointed at the default artifact directory unless the user explicitly wants another export location.
+12. Keep `CODEX_WORKSPACE_HOST_PATH` pointed at the dedicated runtime workspace. Do not mount the repository checkout itself to `/workspace`.
 
 ## Runtime Setup
 
@@ -52,7 +55,7 @@ pnpm docker:smoke
 If smoke passes, provide the user with:
 
 - the app name used
-- whether a new app was created or an existing one was reused
+- confirmation that a new app was created for this setup
 - the Docker status
 - how to test the bot in Feishu
 

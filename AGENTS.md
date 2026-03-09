@@ -23,7 +23,7 @@ Set up and deploy a Feishu bot backed by `codex app-server` with as little manua
 
 - Prefer Chrome DevTools Protocol automation over telling the user to click around manually.
 - If `agent-browser` is available, prefer it. Otherwise use any browser/CDP capability available in Codex.
-- Reuse an existing Feishu app when it is clearly the intended app; otherwise create a new enterprise self-built app.
+- After login is complete, create a new Feishu enterprise self-built app/bot for this setup flow. Do not switch to reusing an older app unless the user explicitly asks for that.
 - Drive the UI by visible labels and user goals, not brittle CSS selectors.
 
 ## What Still Requires the User
