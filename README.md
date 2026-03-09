@@ -1,36 +1,28 @@
 # Codex Feishu Bot
 
-把 `codex app-server` 接到飞书群聊，并把“创建飞书应用、开事件订阅、补权限、发布版本、Docker 部署”这整套流程尽量交给用户自己的 Codex 自动完成。
+把“一键创建飞书机器人”这件事尽量交给用户自己的 Codex 自动完成。
 
 这个仓库的主路径不是“用户自己看文档手点控制台”，而是：
 
 1. 用户打开 Codex，模型切到 `GPT-5.4`，推理强度设成 `xhigh`
 2. 用户把仓库地址贴给 Codex
-3. Codex 按本仓库的 `README.md`、`AGENTS.md` 和 `docs/` 自己完成环境准备、浏览器自动化和部署
-4. 用户只在必须的时候介入：登录 Feishu / OpenAI，或处理租户管理员审批
+3. Codex 按本仓库的 `README.md`、`AGENTS.md` 和 `docs/` 自己执行一键创建飞书机器人的脚本
+4. 用户只在必须的时候介入：扫码登录 Feishu / OpenAI，或处理租户管理员审批
 
 ## 这套仓库能自动做什么
 
-- 用 Chrome DevTools Protocol 启动一个专用浏览器实例
-- 让 Codex 通过浏览器自动化操作飞书开放平台
-- 创建一个新的企业自建应用
-- 打开机器人能力
-- 切到飞书长连接模式
-- 订阅 `im.message.receive_v1`
-- 补齐 IM 相关权限
-- 发布版本
-- 把 `FEISHU_APP_ID` / `FEISHU_APP_SECRET` 写回 `.env.real`
-- 用 Docker 起单个 `app` 服务
-- 跑健康检查和 smoke check
+- 直接执行 `npx -y lark-op-cli@latest create-bot`
+- 持续读取脚本输出，而不是等命令结束后再总结
+- 如果出现扫码登录，把 ASCII 二维码原样转发给用户
+- 在命令结束后汇总创建结果和下一步信息
 
-默认情况下，运行时 `Codex` 看到的工作目录是单独挂载的 `/workspace`，不是这个仓库本身。给用户的导出文件会写到这个运行时工作目录下的 `artifacts/`，宿主机默认对应 `.codex-local/workspace/artifacts/`。
-聊天运行态快照也会写到工作目录下的 `.codex-feishu-bot/runtime-state.json`，因此容器重启后仍能保留 `chat -> thread` 映射和最近消息投影；但重启前未完成的 run 会被标记为已中断，不会继续占着 active turn。服务重启完成后，机器人会自动在受影响的群里发一条提示，告诉用户可以直接回复“继续”。
+默认情况下，运行时 `Codex` 看到的工作目录是当前仓库目录。这个创建路径不要求打开浏览器，也不要求用 `agent-browser` 或 Chrome CDP。
 
 ## 用户还需要做什么
 
 只有这几类动作仍然属于用户：
 
-- 登录飞书开放平台
+- 扫码登录飞书
 - 登录 OpenAI / Codex
 - 处理 SSO、2FA 或租户管理员审批
 
@@ -43,10 +35,7 @@
 建议环境：
 
 - macOS 或 Linux
-- Docker / OrbStack
 - Node.js 22+
-- `pnpm`
-- Google Chrome
 - Codex Desktop 或可用的 Codex 会话
 
 ### 2. 让 Codex 接管
@@ -54,7 +43,7 @@
 把这段 prompt 直接贴给 Codex：
 
 ```text
-打开这个仓库后，严格按照 README.md、AGENTS.md、docs/codex-bootstrap-playbook.md、docs/feishu-console-automation.md 执行。优先走 Docker，不要把普通的控制台配置步骤推回给我。先运行 pnpm install、pnpm bootstrap:env、pnpm chrome:debug；如果我没登录飞书开放平台或 OpenAI/Codex，再停下来让我登录。登录完成后，直接帮我创建一个新的飞书 bot：异步执行 `npx -y lark-op-cli@latest create-bot` 并持续读取输出；如果过程中出现扫码登录，请把 ASCII 二维码原样转发给我。新 bot 创建完成后，再继续使用 Chrome CDP 自动配置飞书开发者平台，拿到 FEISHU_APP_ID 和 FEISHU_APP_SECRET 后写回 .env.real，然后用 Docker 启动并验证服务，最后告诉我怎么在飞书里测试。
+打开这个仓库后，严格按照 README.md、AGENTS.md、docs/codex-bootstrap-playbook.md 执行。不要打开浏览器，不要使用 agent-browser，不要做 Chrome CDP 自动化，也不要继续做 Docker 部署或飞书开放平台控制台配置。直接异步执行 `npx -y lark-op-cli@latest create-bot`，持续读取输出；如果过程中出现扫码登录，请把 ASCII 二维码原样转发给我。命令结束后，告诉我创建结果、关键标识、生成的配置和下一步。
 ```
 
 同样的 prompt 也单独放在 [docs/codex-bootstrap-prompt.md](docs/codex-bootstrap-prompt.md)。
@@ -62,39 +51,35 @@
 ### 3. Codex 会执行的本地命令
 
 ```bash
-pnpm install
-pnpm bootstrap:env
-pnpm chrome:debug
-pnpm docker:up
-pnpm docker:smoke
+npx -y lark-op-cli@latest create-bot
 ```
 
 ## 关键文档
 
 - [AGENTS.md](AGENTS.md)：给 Codex 的仓库级操作约束
 - [docs/codex-bootstrap-playbook.md](docs/codex-bootstrap-playbook.md)：Codex 的执行剧本
-- [docs/feishu-console-automation.md](docs/feishu-console-automation.md)：飞书开放平台需要达到的目标状态
 - [docs/open-source-scope.md](docs/open-source-scope.md)：v1 自动化边界
 
-## 浏览器自动化路径
+## 一键创建路径
 
-这个仓库默认把“飞书开发者平台配置”视为浏览器自动化任务，而不是应用运行时的一部分。
+这个仓库当前的 prompt 路径只要求执行一键创建飞书机器人的脚本，不要求打开浏览器。
 
-推荐做法：
-
-```bash
-pnpm chrome:debug
-```
-
-这会启动一个专用的 Chrome 调试实例，并暴露本地 CDP 端口。之后 Codex 可以通过任意可用的浏览器自动化能力接管这个浏览器；如果机器上装了 `agent-browser`，典型命令是：
+推荐命令：
 
 ```bash
-agent-browser --cdp 9222 open https://open.feishu.cn/app
+npx -y lark-op-cli@latest create-bot
 ```
 
-如果 `agent-browser` 不在机器上，Codex 也可以用任何可用的 CDP/DevTools 能力，只要它真的去操作浏览器，而不是让用户手动点一遍。
+执行要求：
+
+- 持续读取 stdout / stderr
+- 如果出现扫码登录，立即把 ASCII 二维码转发给用户
+- 不打开浏览器
+- 不调用 `agent-browser`
 
 ## Docker 运行架构
+
+以下章节保留给仓库的其他开发/部署用途，不属于当前“一键创建飞书机器人” prompt 路径。
 
 ```mermaid
 flowchart LR
@@ -206,10 +191,10 @@ curl http://localhost:3400/fake/state
 
 ## 注意事项
 
-- `.env.real`、本地 Chrome profile、`.codex-local/` 都不要提交到 GitHub
+- `.env.real`、`.codex-local/` 都不要提交到 GitHub
 - 用户可见导出文件默认会落到 `.codex-local/workspace/artifacts/`，这是预期行为，不是源码目录
 - 运行时用户可见的文件必须通过飞书 API 发布，工作空间文件默认只有 Codex 自己可见
-- 这套仓库默认不会为用户申请不存在的“飞书开发者平台管理 API”；平台配置路径是浏览器自动化
+- 这套 prompt 默认不会打开浏览器，也不会调用 `agent-browser`
 - 对外只有单容器部署，不再提供双容器 sidecar 运行模式
 
 ## License
