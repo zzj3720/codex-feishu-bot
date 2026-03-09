@@ -33,11 +33,11 @@ agent-browser install
 1. Connect to the Chrome CDP endpoint started by `pnpm chrome:debug`.
 2. Open the Feishu Open Platform app list.
 3. If the user is not logged in, stop and ask them to finish login in that browser window.
-4. Do not manually create or pick a bot in the browser as the first step.
-5. Run `npx -y lark-op-cli@latest create-bot --name "Codex 机器人"` as the primary bot-creation step.
-6. Read the command output continuously instead of waiting for process exit.
-7. If the command output shows that an existing compatible bot/app was found and reused, continue with that result instead of creating another one.
-8. If the command shows an ASCII QR code or other login prompt, surface it to the user immediately so they can scan or confirm.
+4. Ask the user one explicit question: whether they want to create a new bot.
+5. If the answer is yes, run `npx -y lark-op-cli@latest create-bot --name "Codex 机器人"`.
+6. In the create-bot branch, read the command output continuously instead of waiting for process exit.
+7. In the create-bot branch, if the command shows an ASCII QR code or other login prompt, surface it to the user immediately so they can scan or confirm.
+8. If the answer is no, continue with the original browser/CDP path and choose or create the target bot in Feishu Open Platform.
 9. After the target bot/app is confirmed, continue without asking the user to click through normal console steps.
 10. Follow the target state in `docs/feishu-console-automation.md`.
 11. Persist the resulting `FEISHU_APP_ID` and `FEISHU_APP_SECRET` into `.env.real`.
