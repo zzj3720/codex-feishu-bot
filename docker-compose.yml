@@ -1,0 +1,45 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        CODEX_CLI_VERSION: ${CODEX_CLI_VERSION:-0.111.0}
+    restart: unless-stopped
+    init: true
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3000
+      DEFAULT_WORKSPACE: /workspace
+      CODEX_ARTIFACTS_DIR: ${CODEX_ARTIFACTS_DIR:-/workspace/artifacts}
+      RUNTIME_STATE_FILE: ${RUNTIME_STATE_FILE:-/workspace/.codex-feishu-bot/runtime-state.json}
+      LIVE_UPDATE_DEBOUNCE_MS: ${LIVE_UPDATE_DEBOUNCE_MS:-1200}
+      CODEX_MODE: app-server
+      CODEX_APP_SERVER_COMMAND: /usr/local/bin/start-codex-app-server
+      CODEX_APP_SERVER_ARGS: app-server
+      CODEX_APP_SERVER_MANAGED: "true"
+      CODEX_APP_SERVER_LISTEN_URL: ws://127.0.0.1:4500
+      CODEX_APP_SERVER_MODEL: ${CODEX_APP_SERVER_MODEL:-gpt-5.4}
+      CODEX_APP_SERVER_APPROVAL_POLICY: never
+      CODEX_APP_SERVER_SANDBOX: danger-full-access
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      CODEX_HOME_DIR: /root/.codex
+      FEISHU_PROVIDER: sdk
+      FEISHU_TRANSPORT: websocket
+      FEISHU_DOMAIN: ${FEISHU_DOMAIN:-feishu}
+      FEISHU_APP_ID: ${FEISHU_APP_ID:?set FEISHU_APP_ID}
+      FEISHU_APP_SECRET: ${FEISHU_APP_SECRET:?set FEISHU_APP_SECRET}
+      FEISHU_VERIFICATION_TOKEN: ${FEISHU_VERIFICATION_TOKEN:-}
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    volumes:
+      - ${CODEX_WORKSPACE_HOST_PATH:-./.codex-local/workspace}:/workspace
+      - ${CODEX_HOME_SOURCE:-codex-home}:/root/.codex
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  codex-home:

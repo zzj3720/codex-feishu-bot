@@ -1,0 +1,39 @@
+{
+  "name": "codex-feishu-bot",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "tsx --test src/integrations/feishu/*.test.ts src/services/*.test.ts src/stores/*.test.ts",
+    "start": "node dist/index.js",
+    "bootstrap:env": "./scripts/bootstrap-env.sh",
+    "chrome:debug": "./scripts/start-debug-chrome.sh",
+    "fake-feishu": "node scripts/fake-feishu-server.mjs",
+    "docker:up": "./scripts/docker.sh up --build -d",
+    "docker:down": "./scripts/docker.sh down -v",
+    "docker:ps": "./scripts/docker.sh ps",
+    "docker:logs": "./scripts/docker.sh logs -f app",
+    "docker:restart": "./scripts/docker.sh restart app",
+    "docker:exec:app": "./scripts/docker.sh exec app sh",
+    "docker:smoke": "./scripts/docker-smoke.sh",
+    "docker:fake:up": "docker compose -f docker-compose.fake.yml up --build -d",
+    "docker:fake:down": "docker compose -f docker-compose.fake.yml down -v",
+    "docker:fake:logs": "docker compose -f docker-compose.fake.yml logs -f app fake-feishu"
+  },
+  "dependencies": {
+    "@larksuiteoapi/node-sdk": "^1.59.0",
+    "dotenv": "^16.4.7",
+    "fastify": "^5.2.1",
+    "ws": "^8.18.1",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "@types/ws": "^8.5.14",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}

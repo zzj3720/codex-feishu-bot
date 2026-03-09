@@ -1,0 +1,40 @@
+services:
+  fake-feishu:
+    build:
+      context: .
+      dockerfile: Dockerfile.fake-feishu
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3400
+    ports:
+      - "3400:3400"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3400/health"]
+      interval: 3s
+      timeout: 2s
+      retries: 20
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        CODEX_CLI_VERSION: ${CODEX_CLI_VERSION:-0.111.0}
+    depends_on:
+      fake-feishu:
+        condition: service_healthy
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3000
+      DEFAULT_WORKSPACE: /workspace
+      CODEX_ARTIFACTS_DIR: /workspace/artifacts
+      CODEX_MODE: mock
+      LIVE_UPDATE_DEBOUNCE_MS: 300
+      FEISHU_PROVIDER: fake
+      FEISHU_TRANSPORT: websocket
+      FAKE_FEISHU_BASE_URL: http://fake-feishu:3400
+      FAKE_FEISHU_WS_URL: ws://fake-feishu:3400/ws
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./.codex-local/workspace:/workspace
