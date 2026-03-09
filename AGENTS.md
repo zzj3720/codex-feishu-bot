@@ -6,10 +6,6 @@ This repository is designed for a Codex-operated bootstrap flow.
 
 Set up and deploy a Feishu bot backed by `codex app-server` with as little manual work as possible. The intended operator is another Codex session running on the user's machine.
 
-Prompt-scoped exception:
-
-- If the user's prompt explicitly says not to open a browser and to only run `npx -y lark-op-cli@latest create-bot`, obey that narrower scope and stop after reporting the command result.
-
 ## Required Execution Order
 
 1. Read `README.md`.
@@ -27,7 +23,7 @@ Prompt-scoped exception:
 
 - Prefer Chrome DevTools Protocol automation over telling the user to click around manually.
 - If `agent-browser` is available, prefer it. Otherwise use any browser/CDP capability available in Codex.
-- After login is complete, create a new Feishu enterprise self-built app/bot for this setup flow. Do not switch to reusing an older app unless the user explicitly asks for that.
+- Reuse an existing Feishu app when it is clearly the intended app; otherwise create a new enterprise self-built app.
 - Drive the UI by visible labels and user goals, not brittle CSS selectors.
 
 ## What Still Requires the User
